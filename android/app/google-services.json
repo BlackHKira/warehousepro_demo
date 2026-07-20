@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "457712394889",
+    "project_id": "warehousepro-20f46",
+    "storage_bucket": "warehousepro-20f46.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:457712394889:android:cde1f4cf531f8df9569c58",
+        "android_client_info": {
+          "package_name": "com.warehousepro.warehousepro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBuJAquuQcEc_U9hvPoVi3XegGQRX54DV4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:457712394889:android:67bff93974cc0422569c58",
+        "android_client_info": {
+          "package_name": "com.warehousepro.warehousepro_demo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBuJAquuQcEc_U9hvPoVi3XegGQRX54DV4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
