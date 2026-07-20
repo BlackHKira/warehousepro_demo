@@ -3,7 +3,7 @@ import 'package:warehousepro_demo/main.dart';
 
 void main() {
   testWidgets('App renders login screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const WarehouseProDemo());
+    await tester.pumpWidget(const WarehouseProApp());
     expect(find.text('WarehousePro'), findsOneWidget);
   });
 }
