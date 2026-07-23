@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/zone_provider.dart' show zonesProvider;
+import '../services/zone_service.dart' show ZoneService;
 
-class BulkScanScreen extends StatefulWidget {
+class BulkScanScreen extends ConsumerStatefulWidget {
   const BulkScanScreen({super.key});
 
   @override
-  State<BulkScanScreen> createState() => _BulkScanScreenState();
+  ConsumerState<BulkScanScreen> createState() => _BulkScanScreenState();
 }
 
-class _BulkScanScreenState extends State<BulkScanScreen> {
+class _BulkScanScreenState extends ConsumerState<BulkScanScreen> {
   String _selectedZone = 'A1';
   bool _isScanning = false;
   int _scannedCount = 0;
 
   final _results = <_ScanResult>[];
-
-  final _zones = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
   void _startScan() {
     setState(() => _isScanning = true);
@@ -22,12 +23,14 @@ class _BulkScanScreenState extends State<BulkScanScreen> {
 
   void _simulateScan() {
     final mockItems = [
-      _ScanResult(product: 'Coca Cola 355ml', barcode: '8934567890123', book: 24, actual: 24, status: 'match'),
-      _ScanResult(product: 'Pepsi 355ml', barcode: '8934567890456', book: 18, actual: 18, status: 'match'),
-      _ScanResult(product: 'Sting đỏ 330ml', barcode: '8934567890789', book: 12, actual: 10, status: 'shortage'),
-      _ScanResult(product: 'Aquafina 500ml', barcode: '8934567890111', book: 30, actual: 31, status: 'surplus'),
-      _ScanResult(product: 'Number 1', barcode: '8934567890222', book: 8, actual: 8, status: 'match'),
-      _ScanResult(product: 'Trà xanh C2', barcode: '8934567890333', book: 15, actual: 0, status: 'missing'),
+      _ScanResult(product: 'Coca Cola 355ml', barcode: '8934567890001', book: 24, actual: 24, status: 'match'),
+      _ScanResult(product: 'Pepsi 355ml', barcode: '8934567890002', book: 18, actual: 18, status: 'match'),
+      _ScanResult(product: 'Sting đỏ 330ml', barcode: '8934567890003', book: 12, actual: 10, status: 'shortage'),
+      _ScanResult(product: 'Aquafina 500ml', barcode: '8934567890009', book: 30, actual: 31, status: 'surplus'),
+      _ScanResult(product: 'Mì tôm Hảo Hảo 75g', barcode: '8934567890017', book: 50, actual: 50, status: 'match'),
+      _ScanResult(product: 'Bánh Oreo 97g', barcode: '8934567890025', book: 20, actual: 18, status: 'shortage'),
+      _ScanResult(product: 'Dầu gội Clear 200ml', barcode: '8934567890033', book: 15, actual: 15, status: 'match'),
+      _ScanResult(product: 'Nước rửa chén Sunlight', barcode: '8934567890041', book: 25, actual: 0, status: 'missing'),
     ];
     setState(() {
       _results.clear();
@@ -39,6 +42,8 @@ class _BulkScanScreenState extends State<BulkScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final zones = ref.watch(zonesProvider).valueOrNull ?? ZoneService.defaultZones;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Kiểm kê theo vị trí')),
       body: Column(
@@ -54,12 +59,12 @@ class _BulkScanScreenState extends State<BulkScanScreen> {
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: _zones.map((z) => Padding(
+                    children: zones.map((z) => Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
-                        label: Text('Khu $z'),
-                        selected: _selectedZone == z,
-                        onSelected: (_) => setState(() => _selectedZone = z),
+                        label: Text(z.label),
+                        selected: _selectedZone == z.code,
+                        onSelected: (_) => setState(() => _selectedZone = z.code),
                       ),
                     )).toList(),
                   ),
@@ -229,6 +234,6 @@ class _BulkScanScreenState extends State<BulkScanScreen> {
 class _ScanResult {
   final String product, barcode;
   final int book, actual;
-  final String status; // match, shortage, surplus, missing
+  final String status;
   _ScanResult({required this.product, required this.barcode, required this.book, required this.actual, required this.status});
 }

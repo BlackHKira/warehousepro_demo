@@ -1,7 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/warehouse_provider.dart';
+import '../models/zone.dart';
+import '../providers/warehouse_provider.dart' show warehouseProvider;
+import '../providers/zone_provider.dart' show zonesProvider;
+import '../services/zone_service.dart' show ZoneService;
 
 class ExportScreen extends ConsumerStatefulWidget {
   const ExportScreen({super.key});
@@ -74,16 +77,60 @@ class _CreateExportTabState extends ConsumerState<_CreateExportTab> {
   final _customerController = TextEditingController();
 
   static const _sampleProducts = [
-    ('Coca Cola 355ml', '8934567890123'),
-    ('Pepsi 355ml', '8934567890456'),
-    ('Sting đỏ 330ml', '8934567890789'),
-    ('Aquafina 500ml', '8934567890111'),
-    ('Number 1 355ml', '8934567890222'),
-    ('Bia Tiger 330ml', '8934567890333'),
-    ('Red Bull 250ml', '8934567890444'),
-    ('Trà xanh C2 500ml', '8934567890555'),
-    ('Monster 355ml', '8934567890666'),
-    ('Sữa đậu nành Fami', '8934567890777'),
+    // A1 — Nước ngọt có gas
+    ('Coca Cola 355ml', '8934567890001', 'A1'),
+    ('Pepsi 355ml', '8934567890002', 'A1'),
+    ('Sting đỏ 330ml', '8934567890003', 'A1'),
+    ('Number 1 355ml', '8934567890004', 'A1'),
+    ('7Up 355ml', '8934567890005', 'A1'),
+    ('Sprite 355ml', '8934567890006', 'A1'),
+    ('Fanta cam 355ml', '8934567890007', 'A1'),
+    ('Mirinda Cream Soda 330ml', '8934567890008', 'A1'),
+    // A2 — Nước lọc, trà, nước tăng lực
+    ('Aquafina 500ml', '8934567890009', 'A2'),
+    ('Trà xanh C2 500ml', '8934567890010', 'A2'),
+    ('Trà O Long Tea 500ml', '8934567890011', 'A2'),
+    ('Nước ép cam Twister 350ml', '8934567890012', 'A2'),
+    ('Lavie 500ml', '8934567890013', 'A2'),
+    ('Dasani 500ml', '8934567890014', 'A2'),
+    ('Red Bull 250ml', '8934567890015', 'A2'),
+    ('Monster 355ml', '8934567890016', 'A2'),
+    // B1 — Mì, cháo, phở
+    ('Mì tôm Hảo Hảo 75g', '8934567890017', 'B1'),
+    ('Mì tôm Omachi 75g', '8934567890018', 'B1'),
+    ('Mì ly Miliket 65g', '8934567890019', 'B1'),
+    ('Cháo gà Vifon 60g', '8934567890020', 'B1'),
+    ('Phở bò Vifon 65g', '8934567890021', 'B1'),
+    ('Mì Cung Đình 75g', '8934567890022', 'B1'),
+    ('Mì tôm Kokomi 80g', '8934567890023', 'B1'),
+    ('Bún gạo QBB 70g', '8934567890024', 'B1'),
+    // B2 — Bánh, kẹo, snack, sữa
+    ('Bánh Oreo 97g', '8934567890025', 'B2'),
+    ('Bánh Cosy 120g', '8934567890026', 'B2'),
+    ('Khoai tây chiên Poca 90g', '8934567890027', 'B2'),
+    ('Kẹo mút Chupa Chups', '8934567890028', 'B2'),
+    ('Bánh gạo One One 80g', '8934567890029', 'B2'),
+    ('Snack Lays 70g', '8934567890030', 'B2'),
+    ('Sữa đậu nành Fami 200ml', '8934567890031', 'B2'),
+    ('Sữa Milo hộp 180ml', '8934567890032', 'B2'),
+    // C1 — Đồ vệ sinh cá nhân
+    ('Dầu gội Clear 200ml', '8934567890033', 'C1'),
+    ('Dầu gội Sunsilk 180ml', '8934567890034', 'C1'),
+    ('Sữa tắm Lifebuoy 250ml', '8934567890035', 'C1'),
+    ('Xà phòng Lifebuoy 90g', '8934567890036', 'C1'),
+    ('Kem đánh răng Colgate 120g', '8934567890037', 'C1'),
+    ('Lăn khử mùi Rexona 40ml', '8934567890038', 'C1'),
+    ('Nước súc miệng Listerine 250ml', '8934567890039', 'C1'),
+    ('Khăn giấy ướt Bobby 100 tờ', '8934567890040', 'C1'),
+    // C2 — Gia dụng, tẩy rửa
+    ('Nước rửa chén Sunlight 750ml', '8934567890041', 'C2'),
+    ('Nước lau sàn Vim 500ml', '8934567890042', 'C2'),
+    ('Bột giặt Omo 1kg', '8934567890043', 'C2'),
+    ('Nước xả Comfort 500ml', '8934567890044', 'C2'),
+    ('Thuốc tẩy Javel 500ml', '8934567890045', 'C2'),
+    ('Túi rác 50x60 30c', '8934567890046', 'C2'),
+    ('Khăn giấy Pulppy 10c', '8934567890047', 'C2'),
+    ('Bọc nilon 30cm', '8934567890048', 'C2'),
   ];
 
   @override
@@ -92,11 +139,11 @@ class _CreateExportTabState extends ConsumerState<_CreateExportTab> {
     super.dispose();
   }
 
-  void _addItem(String name, String barcode, int qty) {
-    setState(() => _items.add(_ExportItem(name: name, barcode: barcode, qty: qty)));
+  void _addItem(String name, String barcode, int qty, [String zone = 'A1']) {
+    setState(() => _items.add(_ExportItem(name: name, barcode: barcode, qty: qty, zone: zone)));
   }
 
-  void _showScanDialog() {
+  void _showScanDialog(List<Zone> zones) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -123,7 +170,7 @@ class _CreateExportTabState extends ConsumerState<_CreateExportTab> {
               final rng = Random();
               final product = _sampleProducts[rng.nextInt(_sampleProducts.length)];
               final qty = 1 + rng.nextInt(10);
-              _addItem(product.$1, product.$2, qty);
+              _addItem(product.$1, product.$2, qty, product.$3);
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Đã quét: ${product.$1} — $qty thùng'), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 1)));
             },
             child: const Text('Giả lập quét'),
@@ -133,39 +180,50 @@ class _CreateExportTabState extends ConsumerState<_CreateExportTab> {
     );
   }
 
-  void _showManualDialog() {
+  void _showManualDialog(List<Zone> zones) {
     final nameCtrl = TextEditingController();
     final barcodeCtrl = TextEditingController();
     final qtyCtrl = TextEditingController(text: '1');
+    final fallbackZone = zones.isNotEmpty ? zones.first.code : 'A1';
+    String selectedZone = fallbackZone;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Thêm sản phẩm thủ công'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Tên sản phẩm', border: OutlineInputBorder()), autofocus: true),
-              const SizedBox(height: 12),
-              TextField(controller: barcodeCtrl, decoration: const InputDecoration(labelText: 'Mã vạch', border: OutlineInputBorder())),
-              const SizedBox(height: 12),
-              TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Số lượng', border: OutlineInputBorder()), keyboardType: TextInputType.number),
-            ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Thêm sản phẩm thủ công'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Tên sản phẩm', border: OutlineInputBorder()), autofocus: true),
+                const SizedBox(height: 12),
+                TextField(controller: barcodeCtrl, decoration: const InputDecoration(labelText: 'Mã vạch', border: OutlineInputBorder())),
+                const SizedBox(height: 12),
+                TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Số lượng', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedZone,
+                  decoration: const InputDecoration(labelText: 'Khu vực', border: OutlineInputBorder()),
+                  items: zones.map((z) => DropdownMenuItem(value: z.code, child: Text(z.label, style: const TextStyle(fontSize: 14)))).toList(),
+                  onChanged: (v) => setDialogState(() => selectedZone = v ?? fallbackZone),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
+            FilledButton(
+              onPressed: () {
+                final qty = int.tryParse(qtyCtrl.text) ?? 1;
+                if (nameCtrl.text.trim().isEmpty) return;
+                _addItem(nameCtrl.text.trim(), barcodeCtrl.text.trim().isEmpty ? 'N/A' : barcodeCtrl.text.trim(), qty, selectedZone);
+                Navigator.pop(ctx);
+              },
+              child: const Text('Thêm'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
-          FilledButton(
-            onPressed: () {
-              final qty = int.tryParse(qtyCtrl.text) ?? 1;
-              if (nameCtrl.text.trim().isEmpty) return;
-              _addItem(nameCtrl.text.trim(), barcodeCtrl.text.trim().isEmpty ? 'N/A' : barcodeCtrl.text.trim(), qty);
-              Navigator.pop(ctx);
-            },
-            child: const Text('Thêm'),
-          ),
-        ],
       ),
     );
   }
@@ -200,7 +258,12 @@ class _CreateExportTabState extends ConsumerState<_CreateExportTab> {
   }
 
   void _doSave(int totalQty) {
-    ref.read(warehouseProvider.notifier).addExport(totalQty, _customerController.text.trim().isEmpty ? 'Khách lẻ' : _customerController.text.trim());
+    final zoneCounts = <String, int>{};
+    for (final item in _items) {
+      zoneCounts[item.zone] = (zoneCounts[item.zone] ?? 0) + 1;
+    }
+    final mainZone = zoneCounts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+    ref.read(warehouseProvider.notifier).addExport(totalQty, _customerController.text.trim().isEmpty ? 'Khách lẻ' : _customerController.text.trim(), zone: mainZone);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Đã lưu phiếu xuất — $totalQty sản phẩm'), behavior: SnackBarBehavior.floating, backgroundColor: Colors.orange.shade700),
     );
@@ -210,6 +273,7 @@ class _CreateExportTabState extends ConsumerState<_CreateExportTab> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final zones = ref.watch(zonesProvider).valueOrNull ?? ZoneService.defaultZones;
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -235,7 +299,7 @@ class _CreateExportTabState extends ConsumerState<_CreateExportTab> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: _showScanDialog,
+                onPressed: () => _showScanDialog(zones),
                 icon: const Icon(Icons.qr_code_scanner),
                 label: const Text('Quét mã'),
                 style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
@@ -244,7 +308,7 @@ class _CreateExportTabState extends ConsumerState<_CreateExportTab> {
             const SizedBox(width: 12),
             Expanded(
               child: FilledButton.tonalIcon(
-                onPressed: _showManualDialog,
+                onPressed: () => _showManualDialog(zones),
                 icon: const Icon(Icons.edit),
                 label: const Text('Nhập tay'),
                 style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
@@ -277,7 +341,20 @@ class _CreateExportTabState extends ConsumerState<_CreateExportTab> {
             child: Card(
               child: ListTile(
                 leading: Container(width: 44, height: 44, decoration: BoxDecoration(color: cs.errorContainer, borderRadius: BorderRadius.circular(10)), child: Icon(Icons.warning, color: cs.onErrorContainer)),
-                title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                title: Row(
+                  children: [
+                    Expanded(child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w500))),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text('📍 ${item.zone}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.blue.shade700)),
+                    ),
+                  ],
+                ),
                 subtitle: Text(item.barcode, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -392,7 +469,7 @@ class _PickingOrderCard extends StatelessWidget {
 }
 
 class _ExportItem {
-  final String name, barcode;
+  final String name, barcode, zone;
   int qty;
-  _ExportItem({required this.name, required this.barcode, required this.qty});
+  _ExportItem({required this.name, required this.barcode, required this.qty, this.zone = 'A1'});
 }

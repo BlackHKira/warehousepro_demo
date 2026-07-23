@@ -9,41 +9,73 @@ import 'search_screen.dart';
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
+  String _formatTime(dynamic t) {
+    if (t is DateTime) return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    if (t is String) {
+      final dt = DateTime.tryParse(t);
+      if (dt != null) return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    }
+    return '';
+  }
+
+  String _formatSyncTime(String iso) {
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return '';
+    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')} '
+        '${dt.day}/${dt.month}/${dt.year}';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final warehouse = ref.watch(warehouseProvider);
+    final notifier = ref.read(warehouseProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('WarehousePro'),
         actions: [
-          GestureDetector(
-            onTap: () {
-              ref.read(warehouseProvider.notifier).syncNow();
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã đồng bộ tất cả phiếu'), behavior: SnackBarBehavior.floating));
-            },
-            child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: warehouse.pendingSync > 0 ? Colors.orange.shade50 : Colors.green.shade50,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.sync_problem, size: 16, color: warehouse.pendingSync > 0 ? const Color(0xFFE65100) : Colors.green),
-                  const SizedBox(width: 4),
-                  Text('${warehouse.pendingSync}', style: TextStyle(fontWeight: FontWeight.bold, color: warehouse.pendingSync > 0 ? const Color(0xFFE65100) : Colors.green, fontSize: 13)),
-                  Text(' chờ sync', style: TextStyle(fontSize: 12, color: warehouse.pendingSync > 0 ? const Color(0xFFE65100) : Colors.green)),
-                ],
-              ),
-            ),
-          ),
-          IconButton(icon: const Icon(Icons.sync), onPressed: () {
-            ref.read(warehouseProvider.notifier).syncNow();
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã đồng bộ tất cả phiếu'), behavior: SnackBarBehavior.floating));
-          }),
+          warehouse.isSyncing
+              ? Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.all(6),
+                  child: const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : GestureDetector(
+                  onTap: () => notifier.syncData(),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: warehouse.pendingSync > 0 ? Colors.orange.shade50 : Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          warehouse.pendingSync > 0 ? Icons.sync_problem : Icons.sync,
+                          size: 16,
+                          color: warehouse.pendingSync > 0 ? const Color(0xFFE65100) : Colors.green,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          warehouse.lastSyncAt != null && warehouse.pendingSync == 0
+                              ? 'Đã đồng bộ'
+                              : '${warehouse.pendingSync}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: warehouse.pendingSync > 0 ? const Color(0xFFE65100) : Colors.green,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
           IconButton(icon: const Icon(Icons.person_outline), onPressed: () {}),
         ],
       ),
@@ -52,6 +84,95 @@ class DashboardScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Sync error banner
+            if (warehouse.syncError != null)
+              GestureDetector(
+                onTap: () {
+                  notifier.clearSyncError();
+                  notifier.syncData();
+                },
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          warehouse.syncError!,
+                          style: TextStyle(color: Colors.red.shade900, fontWeight: FontWeight.w500, fontSize: 14),
+                        ),
+                      ),
+                      Icon(Icons.refresh, color: Colors.red.shade700, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Sync banner
+            if (warehouse.syncError == null && warehouse.pendingSync > 0)
+              GestureDetector(
+                onTap: warehouse.isSyncing ? null : () => notifier.syncData(),
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.cloud_upload_outlined, color: Colors.orange.shade700, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '${warehouse.pendingSync} bản ghi chờ đồng bộ',
+                          style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.w500, fontSize: 14),
+                        ),
+                      ),
+                      if (warehouse.isSyncing)
+                        SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.orange.shade700),
+                        )
+                      else
+                        Icon(Icons.sync, color: Colors.orange.shade700, size: 20),
+                    ],
+                  ),
+                ),
+              )
+            else if (warehouse.syncError == null && warehouse.lastSyncAt != null && warehouse.pendingSync == 0)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.cloud_done_outlined, color: Colors.green.shade700, size: 20),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Đã đồng bộ lúc ${_formatSyncTime(warehouse.lastSyncAt!)}',
+                      style: TextStyle(color: Colors.green.shade900, fontWeight: FontWeight.w500, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+
             // Stats row
             Row(
               children: [
@@ -129,11 +250,6 @@ class DashboardScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  String _formatTime(dynamic t) {
-    if (t is DateTime) return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
-    return '';
   }
 }
 
